@@ -1,10 +1,8 @@
 import subprocess
+
 import requests
 
-# Streamer machine's LAN IP in production. For same-machine dev, use the
-# container IP printed by streamer.py (not 127.0.0.1, docker-proxy breaks UDP).
-HOST = "127.0.0.1"
-PROTOCOLS = "udp"  # use "tcp" if you must read via 127.0.0.1 in dev
+HOST = "172.20.10.2"
 
 
 def get_available_streams(ip):
@@ -19,7 +17,7 @@ def receive_stream(ip, name):
 			"gst-launch-1.0",
 			"rtspsrc",
 			f"location=rtsp://{ip}:8554/{name}",
-			f"protocols={PROTOCOLS}",
+			"protocols=udp",
 			"latency=0",
 			"!",
 			"rtph264depay",
