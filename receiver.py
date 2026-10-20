@@ -1,27 +1,23 @@
 import subprocess
+
 import requests
 
+HOST = "172.20.10.2"
 
-# get list of rtsp streams from http://172.20.10.2:9997/v3/paths/list
-def get_available_streams():
-	resp = requests.get("http://172.20.10.2:9997/v3/paths/list")
+
+def get_available_streams(ip):
+	resp = requests.get(f"http://{ip}:9997/v3/paths/list", timeout=5)
 	resp.raise_for_status()
-
-	# Stream name: $.items[*].name
-	# Stream ready: $.items[*].ready
-	streams = [item["name"] for item in resp.json()["items"] if item["ready"]]
-	return streams
+	return [item["name"] for item in resp.json()["items"] if item["ready"]]
 
 
-def receive_stream(name):
-	# gst-launch-1.0 rtspsrc location=rtsp://172.20.10.2:8554/test latency=0 ! \
-	# rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false
-
-	subprocess.Popen(
+def receive_stream(ip, name):
+	return subprocess.Popen(
 		[
 			"gst-launch-1.0",
 			"rtspsrc",
-			f"location=rtsp://172.20.10.2:8554/{name}",
+			f"location=rtsp://{ip}:8554/{name}",
+			"protocols=udp",
 			"latency=0",
 			"!",
 			"rtph264depay",
@@ -36,17 +32,25 @@ def receive_stream(name):
 			"sync=false",
 		]
 	)
-	print(f"Receiver stream launched for stream {name}.")
 
 
 def main():
-	streams = get_available_streams()
+	streams = get_available_streams(HOST)
 	if not streams:
 		print("No available streams found.")
 		return
+
+	procs = []
 	for stream in streams:
-		print(f"Available stream: {stream}")
-		receive_stream(stream)
+		print(f"Receiving stream: {stream}")
+		procs.append(receive_stream(HOST, stream))
+
+	try:
+		for p in procs:
+			p.wait()
+	except KeyboardInterrupt:
+		for p in procs:
+			p.terminate()
 
 
 if __name__ == "__main__":
