@@ -5,6 +5,7 @@ import docker
 import signal
 import atexit
 import subprocess
+from typing import List
 
 
 class MediaMTXContainer:
@@ -35,8 +36,17 @@ class MediaMTXContainer:
 		print("Signal received. Stopping container...")
 		self.stop_container()
 		exit(0)
+CAMERA_SCAN_START = 0
+CAMERA_SCAN_STOP = 8
+CAMERA_SCAN_STEP = 2
 
-
+def find_available_cameras() -> List[int]:
+	available_cameras = []
+	for cam_id in range(CAMERA_SCAN_START, CAMERA_SCAN_STOP, CAMERA_SCAN_STEP):
+		device_path = f"/dev/video{cam_id}"
+		if os.path.exists(device_path):
+			available_cameras.append(cam_id)
+	return available_cameras
 def launch_camera(video_id):
 	# gst-launch-1.0 v4l2src device=/dev/video0 ! \
 	# image/jpeg, width=1280, height=720, framerate=30/1 ! \
@@ -77,10 +87,15 @@ def main():
 	media_mtx.start_container()
 	time.sleep(5)  # Wait for the container to be fully up and running
 
-	launch_camera(video_id=0)
+	camera_ids = find_available_cameras()
 
-	while True:
-		time.sleep(1)
+	if not camera_ids:
+		print("No available cameras found.")
+		return
+
+	for video_id in camera_ids:
+		launch_camera(video_id)
+
 
 
 if __name__ == "__main__":

@@ -2,9 +2,9 @@ import subprocess
 import requests
 
 
-# get list of rtsp streams from http://127.0.0.1:9997/v3/paths/list
+# get list of rtsp streams from http://172.20.10.2:9997/v3/paths/list
 def get_available_streams():
-	resp = requests.get("http://127.0.0.1:9997/v3/paths/list")
+	resp = requests.get("http://172.20.10.2:9997/v3/paths/list")
 	resp.raise_for_status()
 
 	# Stream name: $.items[*].name
@@ -14,14 +14,14 @@ def get_available_streams():
 
 
 def receive_stream(name):
-	# gst-launch-1.0 rtspsrc location=rtsp://127.0.0.1:8554/test latency=0 ! \
+	# gst-launch-1.0 rtspsrc location=rtsp://172.20.10.2:8554/test latency=0 ! \
 	# rtph264depay ! h264parse ! decodebin ! videoconvert ! autovideosink sync=false
 
 	subprocess.Popen(
 		[
 			"gst-launch-1.0",
 			"rtspsrc",
-			f"location=rtsp://127.0.0.1:8554/{name}",
+			f"location=rtsp://172.20.10.2:8554/{name}",
 			"latency=0",
 			"!",
 			"rtph264depay",
